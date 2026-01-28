@@ -1,0 +1,447 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+
+local Settings = {
+    Enabled = false,
+    HitboxSize = 10,
+    Allies = {},
+    ShowHitbox = false
+}
+
+local OriginalSizes = {}
+local ExpandedPlayers = {}
+local GUIVisible = true
+local HitboxVisuals = {}
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "HitboxGUI"
+ScreenGui.ResetOnSpawn = false
+
+local ToggleGUIButton = Instance.new("TextButton")
+ToggleGUIButton.Size = UDim2.new(0, 50, 0, 50)
+ToggleGUIButton.Position = UDim2.new(0, 10, 0.5, -25)
+ToggleGUIButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+ToggleGUIButton.Text = "Menu"
+ToggleGUIButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleGUIButton.Font = Enum.Font.GothamBold
+ToggleGUIButton.TextSize = 12
+ToggleGUIButton.Parent = ScreenGui
+
+local ToggleGUICorner = Instance.new("UICorner")
+ToggleGUICorner.CornerRadius = UDim.new(0, 25)
+ToggleGUICorner.Parent = ToggleGUIButton
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 320, 0, 450)
+MainFrame.Position = UDim2.new(0.5, -160, 0.5, -225)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 15)
+MainCorner.Parent = MainFrame
+
+local Border = Instance.new("UIStroke")
+Border.Color = Color3.fromRGB(100, 150, 255)
+Border.Thickness = 2
+Border.Parent = MainFrame
+
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1, 0, 0, 45)
+Header.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Header.Parent = MainFrame
+
+local HeaderCorner = Instance.new("UICorner")
+HeaderCorner.CornerRadius = UDim.new(0, 15)
+HeaderCorner.Parent = Header
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -50, 1, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "Hitbox Expander"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 18
+Title.Parent = Header
+
+local CloseButton = Instance.new("TextButton")
+CloseButton.Size = UDim2.new(0, 40, 0, 40)
+CloseButton.Position = UDim2.new(1, -42, 0, 2.5)
+CloseButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+CloseButton.Text = "X"
+CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseButton.Font = Enum.Font.GothamBold
+CloseButton.TextSize = 20
+CloseButton.Parent = Header
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 10)
+CloseCorner.Parent = CloseButton
+
+local ContentFrame = Instance.new("Frame")
+ContentFrame.Size = UDim2.new(1, -30, 1, -60)
+ContentFrame.Position = UDim2.new(0, 15, 0, 55)
+ContentFrame.BackgroundTransparency = 1
+ContentFrame.Parent = MainFrame
+
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Size = UDim2.new(1, 0, 0, 25)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Text = "Status: OFF"
+StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+StatusLabel.Font = Enum.Font.GothamBold
+StatusLabel.TextSize = 14
+StatusLabel.Parent = ContentFrame
+
+local ActivateButton = Instance.new("TextButton")
+ActivateButton.Size = UDim2.new(1, 0, 0, 40)
+ActivateButton.Position = UDim2.new(0, 0, 0, 30)
+ActivateButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+ActivateButton.Text = "ATIVAR"
+ActivateButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ActivateButton.Font = Enum.Font.GothamBold
+ActivateButton.TextSize = 15
+ActivateButton.Parent = ContentFrame
+
+local ActivateCorner = Instance.new("UICorner")
+ActivateCorner.CornerRadius = UDim.new(0, 10)
+ActivateCorner.Parent = ActivateButton
+
+local ShowHitboxButton = Instance.new("TextButton")
+ShowHitboxButton.Size = UDim2.new(1, 0, 0, 35)
+ShowHitboxButton.Position = UDim2.new(0, 0, 0, 75)
+ShowHitboxButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+ShowHitboxButton.Text = "Mostrar Hitbox: OFF"
+ShowHitboxButton.TextColor3 = Color3.fromRGB(255, 100, 100)
+ShowHitboxButton.Font = Enum.Font.Gotham
+ShowHitboxButton.TextSize = 13
+ShowHitboxButton.Parent = ContentFrame
+
+local ShowHitboxCorner = Instance.new("UICorner")
+ShowHitboxCorner.CornerRadius = UDim.new(0, 8)
+ShowHitboxCorner.Parent = ShowHitboxButton
+
+local SizeLabel = Instance.new("TextLabel")
+SizeLabel.Size = UDim2.new(1, 0, 0, 22)
+SizeLabel.Position = UDim2.new(0, 0, 0, 118)
+SizeLabel.BackgroundTransparency = 1
+SizeLabel.Text = "Tamanho: " .. Settings.HitboxSize
+SizeLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+SizeLabel.Font = Enum.Font.Gotham
+SizeLabel.TextSize = 13
+SizeLabel.Parent = ContentFrame
+
+local SizeInput = Instance.new("TextBox")
+SizeInput.Size = UDim2.new(1, 0, 0, 35)
+SizeInput.Position = UDim2.new(0, 0, 0, 145)
+SizeInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+SizeInput.PlaceholderText = "Digite (5-100)"
+SizeInput.Text = tostring(Settings.HitboxSize)
+SizeInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+SizeInput.Font = Enum.Font.Gotham
+SizeInput.TextSize = 14
+SizeInput.Parent = ContentFrame
+
+local SizeInputCorner = Instance.new("UICorner")
+SizeInputCorner.CornerRadius = UDim.new(0, 8)
+SizeInputCorner.Parent = SizeInput
+
+local Divider = Instance.new("Frame")
+Divider.Size = UDim2.new(1, 0, 0, 2)
+Divider.Position = UDim2.new(0, 0, 0, 190)
+Divider.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+Divider.BorderSizePixel = 0
+Divider.Parent = ContentFrame
+
+local AlliesTitle = Instance.new("TextLabel")
+AlliesTitle.Size = UDim2.new(1, 0, 0, 25)
+AlliesTitle.Position = UDim2.new(0, 0, 0, 200)
+AlliesTitle.BackgroundTransparency = 1
+AlliesTitle.Text = "ALIADOS"
+AlliesTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+AlliesTitle.Font = Enum.Font.GothamBold
+AlliesTitle.TextSize = 14
+AlliesTitle.Parent = ContentFrame
+
+local AlliesFrame = Instance.new("Frame")
+AlliesFrame.Size = UDim2.new(1, 0, 0, 160)
+AlliesFrame.Position = UDim2.new(0, 0, 0, 230)
+AlliesFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+AlliesFrame.Parent = ContentFrame
+
+local AlliesFrameCorner = Instance.new("UICorner")
+AlliesFrameCorner.CornerRadius = UDim.new(0, 10)
+AlliesFrameCorner.Parent = AlliesFrame
+
+local PlayerScrollFrame = Instance.new("ScrollingFrame")
+PlayerScrollFrame.Size = UDim2.new(1, -10, 1, -10)
+PlayerScrollFrame.Position = UDim2.new(0, 5, 0, 5)
+PlayerScrollFrame.BackgroundTransparency = 1
+PlayerScrollFrame.ScrollBarThickness = 4
+PlayerScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 150, 255)
+PlayerScrollFrame.Parent = AlliesFrame
+
+local PlayerListLayout = Instance.new("UIListLayout")
+PlayerListLayout.Padding = UDim.new(0, 5)
+PlayerListLayout.Parent = PlayerScrollFrame
+
+local function isAlly(userId)
+    return table.find(Settings.Allies, userId) ~= nil
+end
+
+local function updatePlayerList()
+    for _, child in pairs(PlayerScrollFrame:GetChildren()) do
+        if child:IsA("Frame") then
+            child:Destroy()
+        end
+    end
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local PlayerFrame = Instance.new("Frame")
+            PlayerFrame.Size = UDim2.new(1, -5, 0, 35)
+            PlayerFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+            PlayerFrame.Parent = PlayerScrollFrame
+            
+            local PlayerFrameCorner = Instance.new("UICorner")
+            PlayerFrameCorner.CornerRadius = UDim.new(0, 8)
+            PlayerFrameCorner.Parent = PlayerFrame
+            
+            local PlayerName = Instance.new("TextLabel")
+            PlayerName.Size = UDim2.new(0.55, 0, 1, 0)
+            PlayerName.BackgroundTransparency = 1
+            PlayerName.Text = player.Name
+            PlayerName.TextColor3 = Color3.fromRGB(255, 255, 255)
+            PlayerName.Font = Enum.Font.Gotham
+            PlayerName.TextSize = 12
+            PlayerName.TextXAlignment = Enum.TextXAlignment.Left
+            PlayerName.TextTruncate = Enum.TextTruncate.AtEnd
+            PlayerName.Parent = PlayerFrame
+            
+            local NamePadding = Instance.new("UIPadding")
+            NamePadding.PaddingLeft = UDim.new(0, 10)
+            NamePadding.Parent = PlayerName
+            
+            local AllyButton = Instance.new("TextButton")
+            AllyButton.Size = UDim2.new(0.4, 0, 0, 28)
+            AllyButton.Position = UDim2.new(0.58, 0, 0.5, -14)
+            AllyButton.Font = Enum.Font.GothamBold
+            AllyButton.TextSize = 11
+            AllyButton.Parent = PlayerFrame
+            
+            local AllyButtonCorner = Instance.new("UICorner")
+            AllyButtonCorner.CornerRadius = UDim.new(0, 6)
+            AllyButtonCorner.Parent = AllyButton
+            
+            local function updateAllyButton()
+                if isAlly(player.UserId) then
+                    AllyButton.Text = "Aliado"
+                    AllyButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+                    AllyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+                else
+                    AllyButton.Text = "Aliar"
+                    AllyButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+                    AllyButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+                end
+            end
+            
+            updateAllyButton()
+            
+            AllyButton.MouseButton1Click:Connect(function()
+                local index = table.find(Settings.Allies, player.UserId)
+                if index then
+                    table.remove(Settings.Allies, index)
+                else
+                    table.insert(Settings.Allies, player.UserId)
+                end
+                updateAllyButton()
+            end)
+        end
+    end
+    
+    PlayerScrollFrame.CanvasSize = UDim2.new(0, 0, 0, PlayerListLayout.AbsoluteContentSize.Y)
+end
+
+local function toggleGUI()
+    GUIVisible = not GUIVisible
+    MainFrame.Visible = GUIVisible
+    if GUIVisible then
+        ToggleGUIButton.Text = "Menu"
+    else
+        ToggleGUIButton.Text = ">"
+    end
+end
+
+local function toggleHitbox()
+    Settings.Enabled = not Settings.Enabled
+    
+    if Settings.Enabled then
+        StatusLabel.Text = "Status: ON"
+        StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+        ActivateButton.Text = "DESATIVAR"
+        ActivateButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+    else
+        StatusLabel.Text = "Status: OFF"
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+        ActivateButton.Text = "ATIVAR"
+        ActivateButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        
+        for playerId, _ in pairs(ExpandedPlayers) do
+            ExpandedPlayers[playerId] = nil
+        end
+    end
+end
+
+local function toggleShowHitbox()
+    Settings.ShowHitbox = not Settings.ShowHitbox
+    
+    if Settings.ShowHitbox then
+        ShowHitboxButton.Text = "Mostrar Hitbox: ON"
+        ShowHitboxButton.TextColor3 = Color3.fromRGB(100, 255, 100)
+    else
+        ShowHitboxButton.Text = "Mostrar Hitbox: OFF"
+        ShowHitboxButton.TextColor3 = Color3.fromRGB(255, 100, 100)
+        for _, visual in pairs(HitboxVisuals) do
+            if visual then
+                visual:Destroy()
+            end
+        end
+        HitboxVisuals = {}
+    end
+end
+
+ToggleGUIButton.MouseButton1Click:Connect(toggleGUI)
+CloseButton.MouseButton1Click:Connect(toggleGUI)
+ActivateButton.MouseButton1Click:Connect(toggleHitbox)
+ShowHitboxButton.MouseButton1Click:Connect(toggleShowHitbox)
+
+SizeInput.FocusLost:Connect(function()
+    local newSize = tonumber(SizeInput.Text)
+    if newSize and newSize >= 5 and newSize <= 100 then
+        Settings.HitboxSize = newSize
+        SizeLabel.Text = "Tamanho: " .. Settings.HitboxSize
+        ExpandedPlayers = {}
+    else
+        SizeInput.Text = tostring(Settings.HitboxSize)
+    end
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.P then
+        toggleHitbox()
+    end
+end)
+
+local function expandHitbox(player)
+    if player == LocalPlayer then return end
+    if isAlly(player.UserId) then return end
+    if ExpandedPlayers[player.UserId] then return end
+    
+    local char = player.Character
+    if not char then return end
+    
+    local targetPart = char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
+    if not targetPart then return end
+    
+    local key = player.UserId .. "_torso"
+    
+    if not OriginalSizes[key] then
+        OriginalSizes[key] = {
+            Size = targetPart.Size,
+            Transparency = targetPart.Transparency,
+            CanCollide = targetPart.CanCollide,
+            Massless = targetPart.Massless
+        }
+    end
+    
+    targetPart.Size = Vector3.new(Settings.HitboxSize, Settings.HitboxSize, Settings.HitboxSize)
+    targetPart.Transparency = 1
+    targetPart.CanCollide = false
+    targetPart.Massless = true
+    
+    if Settings.ShowHitbox then
+        local BoxHandleAdornment = Instance.new("BoxHandleAdornment")
+        BoxHandleAdornment.Size = Vector3.new(Settings.HitboxSize, Settings.HitboxSize, Settings.HitboxSize)
+        BoxHandleAdornment.Color3 = Color3.fromRGB(255, 0, 0)
+        BoxHandleAdornment.Transparency = 0.7
+        BoxHandleAdornment.AlwaysOnTop = true
+        BoxHandleAdornment.ZIndex = 5
+        BoxHandleAdornment.Adornee = targetPart
+        BoxHandleAdornment.Parent = targetPart
+        HitboxVisuals[key] = BoxHandleAdornment
+    end
+    
+    ExpandedPlayers[player.UserId] = true
+end
+
+local function restoreHitbox(player)
+    local char = player.Character
+    if not char then return end
+    
+    local targetPart = char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
+    if not targetPart then return end
+    
+    local key = player.UserId .. "_torso"
+    
+    if OriginalSizes[key] then
+        targetPart.Size = OriginalSizes[key].Size
+        targetPart.Transparency = OriginalSizes[key].Transparency
+        targetPart.CanCollide = OriginalSizes[key].CanCollide
+        targetPart.Massless = OriginalSizes[key].Massless
+    end
+    
+    if HitboxVisuals[key] then
+        HitboxVisuals[key]:Destroy()
+        HitboxVisuals[key] = nil
+    end
+    
+    ExpandedPlayers[player.UserId] = nil
+end
+
+RunService.Heartbeat:Connect(function()
+    if not Settings.Enabled then return end
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and not isAlly(player.UserId) then
+            expandHitbox(player)
+        end
+    end
+end)
+
+Players.PlayerAdded:Connect(function()
+    wait(0.5)
+    updatePlayerList()
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    ExpandedPlayers[player.UserId] = nil
+    local index = table.find(Settings.Allies, player.UserId)
+    if index then
+        table.remove(Settings.Allies, index)
+    end
+    updatePlayerList()
+end)
+
+spawn(function()
+    while wait(3) do
+        updatePlayerList()
+    end
+end)
+
+if gethui then
+    ScreenGui.Parent = gethui()
+elseif syn and syn.protect_gui then
+    syn.protect_gui(ScreenGui)
+    ScreenGui.Parent = game:GetService("CoreGui")
+else
+    ScreenGui.Parent = game:GetService("CoreGui")
+end
+
+updatePlayerList()
+print("Hitbox carregado! SAPEKINHA HITBOX ON")
